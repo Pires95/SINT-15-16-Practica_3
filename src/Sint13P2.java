@@ -8,6 +8,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -19,8 +20,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 public class Sint13P2 extends HttpServlet {
@@ -29,14 +32,16 @@ public class Sint13P2 extends HttpServlet {
     static ArrayList<String> fases = new ArrayList<String>();
     static ArrayList<String> errores = new ArrayList<String>();
     static ArrayList<String> ficheroErroneo = new ArrayList<String>();
+    static HttpSession sesion;
 
     public void init() {
-        listaIML.add("http://clave.det.uvigo.es:8080/~sintprof/15-16/p2/sabina.xml");
+        listaIML.add("sabina.xml");
 
         for (int i = 0; i < listaIML.size(); i++) {    //leemos los xml
             String nuevoXML = listaIML.get(i);
             leerXML(nuevoXML);
         }
+
     }
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         doPost(request, response);
@@ -45,34 +50,57 @@ public class Sint13P2 extends HttpServlet {
         response.setContentType("text/html");
         PrintWriter out = response.getWriter();
 
-        if (request.getParameter("fase") != null) {
-            String fase = request.getParameter("fase");
+        try{
+            if (request.getParameter("fase") != null) {
+                String fase = request.getParameter("fase");
 
-            if (fase.equals("0")) pantallaSeleccion(out, request, response);
-
-            if (fase.equals("1")) {
-                if (request.getParameter("consulta").equals("lista")) primeraPantallaLista(out, request, response);
-
-                if (request.getParameter("consulta").equals("estilo")) primeraPantallaEstilos(out, request, response);
-            }
-            if (fase.length() > 1) {
-                if (fase.charAt(0) == '1') {//procesamos por artista
-                    if (fase.equals("11")) segundaPantallaLista(out, request, response);
-
-                    if (fase.length() > 2) terceraPantallaLista(out, request, response);
+                if (fase.equals("0")) {
+                    sesion = request.getSession(true);
+                    sesion.setMaxInactiveInterval(20);
+                    pantallaSeleccion(out, request, response, sesion);
                 }
-                if (fase.charAt(0) == '2') { //procesamos por genero
-                    if (fase.equals("21")) segundaPantallaEstilos(out, request, response);
+                else{
 
-                    if (fase.length() == 3) terceraPantallaEstilos(out, request, response);
+                    Enumeration numeroDeParametros = request.getParameterNames();
+                    while(numeroDeParametros.hasMoreElements()){
+                        String valores = (String)numeroDeParametros.nextElement();
+                        sesion.setAttribute(valores, request.getParameter(valores));
+                    }
 
-                    if (fase.length() == 4) cuartaPantallaEstilos(out, request, response);
+                    if (fase.equals("1")) {
+                        if (((String) sesion.getAttribute("consulta")).equals("lista")) primeraPantallaLista(out, request, response, sesion);
+
+                        if (((String) sesion.getAttribute("consulta")).equals("estilo")) primeraPantallaEstilos(out, request, response, sesion);
+                    }
+                    if (fase.length() > 1) {
+                        if (fase.charAt(0) == '1') {//procesamos por artista
+                            if (fase.equals("11")) segundaPantallaLista(out, request, response, sesion);
+
+                            if (fase.length() > 2) terceraPantallaLista(out, request, response, sesion);
+                        }
+                        if (fase.charAt(0) == '2') { //procesamos por genero
+                            if (fase.equals("21")) segundaPantallaEstilos(out, request, response, sesion);
+
+                            if (fase.length() == 3) terceraPantallaEstilos(out, request, response, sesion);
+
+                            if (fase.length() == 4) cuartaPantallaEstilos(out, request, response, sesion);
+                        }
+                    }
                 }
+            } else{
+                sesion = request.getSession(true);
+                sesion.setMaxInactiveInterval(20);
+                pantallaSeleccion(out, request, response, sesion);
+
             }
-        } else pantallaSeleccion(out, request, response);
+        }catch (Throwable e){
+            sesion = request.getSession(true);
+            sesion.setMaxInactiveInterval(20);
+            pantallaSeleccion(out, request, response, sesion);
+        }
     }
 
-    public void pantallaSeleccion(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+    public void pantallaSeleccion(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws UnsupportedEncodingException {
         imprimirCabecera(out, request, response);
         out.println("<hr></hr>");
         out.println("Se han producido los siguientes errores: <br>");
@@ -84,7 +112,8 @@ public class Sint13P2 extends HttpServlet {
         out.println("</div>");
         out.println("<hr></hr>");
         out.println("<form method='POST' name='form' action='?fase1'>");
-        out.println("<input type='hidden' name='fase' value='1'> ");
+        out.println("<input type='hidden' name='fase' value='1' >");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
         out.println("<input type='radio' name='consulta' value='lista' checked> Lista <br>");
         out.println("<input type='radio' name='consulta' value='estilo'> Canciones por genero<br>");
         out.println("<br>");
@@ -92,12 +121,17 @@ public class Sint13P2 extends HttpServlet {
         imprimirFinal(out, request, response);
     }
 
-    public void primeraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void primeraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
         out.println("Consulta 1");
         out.println("<form method='POST' action='?fase2'>");
         out.println("<input type='hidden' name='fase' value='11' >");
-        out.println("<input type='hidden' name='consulta' value='lista'>");
+        Calendar cal = Calendar.getInstance();
+        Date date = cal.getTime();
+        SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
+        String date1 = format1.format(date);
+        out.println("<input type='hidden' name='hora' value='"+date1+"' >");
+
         ArrayList<String> listaInterpretes = buscarInterprete(listaDocuments);
         out.println("<input type='radio' name='interprete' value='" + listaInterpretes.get(0) + "' checked>" + listaInterpretes.get(0) + "<br>");
 
@@ -110,15 +144,14 @@ public class Sint13P2 extends HttpServlet {
         imprimirFinal(out, request, response);
     }
 
-    public void segundaPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void segundaPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
-        String interpr = request.getParameter("interprete");
+        String interpr = (String) sesion.getAttribute("interprete");
         out.println("Consulta 1, interprete->" + interpr);
         out.println("<form method='POST' action='?fase3'>");
-        out.println("<input type='hidden' name='consulta' value='lista'>");
-        out.println("<input type='hidden' name='interprete' value='" + request.getParameter("interprete") + "'>");
         out.println("<input type='hidden' name='fase' value='111' >");
-        String interprete = request.getParameter("interprete");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+        String interprete = (String) sesion.getAttribute("interprete");
         ArrayList<String> albumesAImprimir = buscarAlbum(listaDocuments, interprete);
         if(albumesAImprimir.size()!=0){
             out.println("<input type='radio' name='album' value='" + albumesAImprimir.get(0) + "' checked>" + albumesAImprimir.get(0) + "<br>");
@@ -128,40 +161,38 @@ public class Sint13P2 extends HttpServlet {
             out.println("<input type='radio' name='album' value='todos'> Todos<br><br>");
             out.println("<input type='submit' value='Enviar'>");
         }
-        char faseAnterior = request.getParameter("fase").charAt(0);
+        char faseAnterior = ((String) sesion.getAttribute("fase")).charAt(0);
         out.println("<input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
         out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
         imprimirFinal(out, request, response);
     }
 
-    public void terceraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void terceraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response,HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
-        out.println("Consulta 1, interprete-> " + request.getParameter("interprete") + ", Álbum->" + request.getParameter("album"));
+        out.println("Consulta 1, interprete-> " + (String) sesion.getAttribute("interprete") + ", Álbum->" + (String) sesion.getAttribute("album"));
         out.println("<form method='POST' action='?fase4'>");
-        out.println("<input type='hidden' name='consulta' value='lista'>");
-        out.println("<input type='hidden' name='interprete' value='" + request.getParameter("interprete") + "'>");
-        out.println("<input type='hidden' name='album' value='" + request.getParameter("album") + "'>");
-        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1'>");
-        String album = request.getParameter("album");
-        String interprete = request.getParameter("interprete");
+        out.println("<input type='hidden' name='fase' value='1111' >");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+
+        String album = (String) sesion.getAttribute("album");
+        String interprete = (String) sesion.getAttribute("interprete");
         ArrayList<String> albumSeleccionado = buscarCanciones(listaDocuments, album, interprete);
 
         if(albumSeleccionado.size()!=0) for (int i = 0; i < albumSeleccionado.size(); i++) out.println(albumSeleccionado.get(i) + "<br>");
 
-        String fase = request.getParameter("fase");
+        String fase = (String) sesion.getAttribute("fase");
         String faseAnterior = fase.substring(0, 2);
         out.println("<br><input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
         out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
         imprimirFinal(out, request, response);
     }
 
-    public void primeraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void primeraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
         out.println("Consulta 2");
         out.println("<form method='POST' action='?fase2'>");
-        out.println("<input type='hidden' name='consulta' value='estilo'>");
-        out.println("<input type='hidden' name='fase' value='21' >");
         ArrayList<String> años = buscarFechas(listaDocuments);
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
 
         if(años.size()!=0){
             out.println("<input type='radio' name='anho' value='" + años.get(0) + "' checked>" + años.get(0) + "<br>");
@@ -176,15 +207,14 @@ public class Sint13P2 extends HttpServlet {
         imprimirFinal(out, request, response);
     }
 
-    public void segundaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void segundaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
 
-        out.println("Consulta 2, Año-> " + request.getParameter("anho"));
+        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho"));
         out.println("<form method='POST' action='?fase3'>");
-        out.println("<input type='hidden' name='consulta' value='estilo'>");
-        out.println("<input type='hidden' name='anho' value='" + request.getParameter("anho") + "'>");
-        out.println("<input type='hidden' name='fase' value='211' >");
-        String año = request.getParameter("anho");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+
+        String año = (String) sesion.getAttribute("anho");
         ArrayList<String> años = buscarAlbumesDeAño(listaDocuments, año);
 
         if(años.size()!=0){
@@ -201,17 +231,15 @@ public class Sint13P2 extends HttpServlet {
         imprimirFinal(out, request, response);
     }
 
-    public void terceraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void terceraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
 
-        out.println("Consulta 2, Año-> " + request.getParameter("anho") + ", Álbum->" + request.getParameter("album"));
+        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album"));
         out.println("<form method='POST' action='?fase4'>");
-        out.println("<input type='hidden' name='consulta' value='estilo'>");
-        out.println("<input type='hidden' name='anho' value='" + request.getParameter("anho") + "'>");
-        out.println("<input type='hidden' name ='album' value='" + request.getParameter("album") + "'>");
-        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
-        String año = request.getParameter("anho");
-        String album = request.getParameter("album");
+        String año = (String) sesion.getAttribute("anho");
+        String album = (String) sesion.getAttribute("album");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+
         ArrayList<String> estilos = buscarEstilos(listaDocuments, año, album);
 
         if(estilos.size()!=0){
@@ -222,29 +250,26 @@ public class Sint13P2 extends HttpServlet {
             out.println("<input type='radio' name='estilos' value='todos'> Todos <br><br>");
             out.println("<input type='submit' value='Enviar'>");
         }
-        String fase = request.getParameter("fase");
+        String fase = (String) sesion.getAttribute("fase");
         String faseAnterior = fase.substring(0, 2);
         out.println("<input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
         out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
         imprimirFinal(out, request, response);
     }
 
-    public void cuartaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    public void cuartaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         imprimirCabecera(out, request, response);
 
-        out.println("Consulta 2, Año-> " + request.getParameter("anho") + ", Álbum->" + request.getParameter("album") + ", Estilo->" + request.getParameter("estilos"));
+        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album") + ", Estilo->" + (String) sesion.getAttribute("estilos"));
         out.println("<form method='POST' action='?fase5'>");
-        out.println("<input type='hidden' name='consulta' value='estilo'>");
-        out.println("<input type='hidden' name='anho' value='" + request.getParameter("anho") + "'>");
-        out.println("<input type='hidden' name ='album' value='" + request.getParameter("album") + "'>");
-        out.println("<input type='hidden' name ='estilo' value='" + request.getParameter("estilos") + "'>");
-        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
-        String año = request.getParameter("anho");
-        String album = request.getParameter("album");
-        String estilo = request.getParameter("estilos");
+        String año = (String) sesion.getAttribute("anho");
+        String album = (String) sesion.getAttribute("album");
+        String estilo = (String) sesion.getAttribute("estilos");
+        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+
         int num = buscarCancionesFinales(listaDocuments, año, album, estilo);
         out.println("El número de canciones de este estilo es:" + num + "<br><br>");
-        String fase = request.getParameter("fase");
+        String fase = (String) sesion.getAttribute("fase");
         String faseAnterior = fase.substring(0, 3);
         out.println("<br><input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
         out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
@@ -494,18 +519,19 @@ public class Sint13P2 extends HttpServlet {
             db = dbf.newDocumentBuilder();
             db.setErrorHandler(new XML_DTD_ErrorHandler());
             Document doc = null;
-            if(xml.startsWith("http:")){
-                doc = db.parse(new URL(xml).openStream(), "http://localhost:8013/sint13/");
-            }else{
-                doc = db.parse(new URL("http://clave.det.uvigo.es:8080/~sintprof/15-16/p2/"+xml).openStream(), "http://localhost:8013/sint13/");
-            }
+           // if(xml.startsWith("http:")){
+             //   doc = db.parse(new URL(xml).openStream(), "http://localhost:8013/sint13/");
+            //}else{
+              //  doc = db.parse(new URL("http://clave.det.uvigo.es:8080/~sintprof/15-16/p2/"+xml).openStream(), "http://localhost:8013/sint13/");
+            //}
+            doc =db.parse(xml);
             listaDocuments.add(doc);
 
             NodeList nodosIMLenSabina = doc.getElementsByTagName("IML");
 
             for (int i = 0; i < nodosIMLenSabina.getLength(); i++) {
                 String siguienteXML = nodosIMLenSabina.item(i).getTextContent();
-                if(!siguienteXML.startsWith("http:")) siguienteXML = "http://178.62.190.10/"+siguienteXML;
+                //if(!siguienteXML.startsWith("http:")) siguienteXML = "http://localhost"+siguienteXML;
 
                 if (!siguienteXML.equals("") && (!listaIML.contains(siguienteXML))) listaIML.add(siguienteXML);
             }
