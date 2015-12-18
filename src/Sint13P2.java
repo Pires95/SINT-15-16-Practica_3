@@ -60,7 +60,6 @@ public class Sint13P2 extends HttpServlet {
                     pantallaSeleccion(out, request, response, sesion);
                 }
                 else{
-
                     Enumeration numeroDeParametros = request.getParameterNames();
                     while(numeroDeParametros.hasMoreElements()){
                         String valores = (String)numeroDeParametros.nextElement();
@@ -91,7 +90,6 @@ public class Sint13P2 extends HttpServlet {
                 sesion = request.getSession(true);
                 sesion.setMaxInactiveInterval(20);
                 pantallaSeleccion(out, request, response, sesion);
-
             }
         }catch (Throwable e){
             sesion = request.getSession(true);
