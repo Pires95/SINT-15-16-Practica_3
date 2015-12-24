@@ -9,13 +9,19 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -29,9 +35,10 @@ import java.util.*;
 public class Sint13P2 extends HttpServlet {
     static ArrayList<String> listaIML = new ArrayList<String>();
     static ArrayList<Document> listaDocuments = new ArrayList<Document>();
-    static ArrayList<String> fases = new ArrayList<String>();
+   // static ArrayList<String> fases = new ArrayList<String>();
     static ArrayList<String> errores = new ArrayList<String>();
     static ArrayList<String> ficheroErroneo = new ArrayList<String>();
+    static ArrayList<interprete> listaInterpretes = new ArrayList<interprete>();
     static HttpSession sesion;
 
     public void init() {
@@ -111,7 +118,6 @@ public class Sint13P2 extends HttpServlet {
         out.println("<hr></hr>");
         out.println("<form method='POST' name='form' action='?fase1'>");
         out.println("<input type='hidden' name='fase' value='1' >");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
         out.println("<input type='radio' name='consulta' value='lista' checked> Lista <br>");
         out.println("<input type='radio' name='consulta' value='estilo'> Canciones por genero<br>");
         out.println("<br>");
@@ -124,13 +130,8 @@ public class Sint13P2 extends HttpServlet {
         out.println("Consulta 1");
         out.println("<form method='POST' action='?fase2'>");
         out.println("<input type='hidden' name='fase' value='11' >");
-        Calendar cal = Calendar.getInstance();
-        Date date = cal.getTime();
-        SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
-        String date1 = format1.format(date);
-        out.println("<input type='hidden' name='hora' value='"+date1+"' >");
 
-        ArrayList<String> listaInterpretes = buscarInterprete(listaDocuments);
+        ArrayList<interprete> listaInterpretes = buscarInterprete(listaDocuments);
         out.println("<input type='radio' name='interprete' value='" + listaInterpretes.get(0) + "' checked>" + listaInterpretes.get(0) + "<br>");
 
         for (int i = 1; i < listaInterpretes.size(); i++) out.println("<input type='radio' name='interprete' value='" + listaInterpretes.get(i) + "'>" + listaInterpretes.get(i) + "<br>");
@@ -148,9 +149,8 @@ public class Sint13P2 extends HttpServlet {
         out.println("Consulta 1, interprete->" + interpr);
         out.println("<form method='POST' action='?fase3'>");
         out.println("<input type='hidden' name='fase' value='111' >");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
         String interprete = (String) sesion.getAttribute("interprete");
-        ArrayList<String> albumesAImprimir = buscarAlbum(listaDocuments, interprete);
+        ArrayList<Album> albumesAImprimir = buscarAlbum(listaDocuments, interprete);
         if(albumesAImprimir.size()!=0){
             out.println("<input type='radio' name='album' value='" + albumesAImprimir.get(0) + "' checked>" + albumesAImprimir.get(0) + "<br>");
 
@@ -170,11 +170,10 @@ public class Sint13P2 extends HttpServlet {
         out.println("Consulta 1, interprete-> " + (String) sesion.getAttribute("interprete") + ", Álbum->" + (String) sesion.getAttribute("album"));
         out.println("<form method='POST' action='?fase4'>");
         out.println("<input type='hidden' name='fase' value='1111' >");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
 
         String album = (String) sesion.getAttribute("album");
         String interprete = (String) sesion.getAttribute("interprete");
-        ArrayList<String> albumSeleccionado = buscarCanciones(listaDocuments, album, interprete);
+        ArrayList<Cancion> albumSeleccionado = buscarCanciones(listaDocuments, album, interprete);
 
         if(albumSeleccionado.size()!=0) for (int i = 0; i < albumSeleccionado.size(); i++) out.println(albumSeleccionado.get(i) + "<br>");
 
@@ -189,8 +188,8 @@ public class Sint13P2 extends HttpServlet {
         imprimirCabecera(out, request, response);
         out.println("Consulta 2");
         out.println("<form method='POST' action='?fase2'>");
-        ArrayList<String> años = buscarFechas(listaDocuments);
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
+        out.println("<input type='hidden' name='fase' value='21' >");
+        ArrayList<Album> años = buscarFechas(listaDocuments);
 
         if(años.size()!=0){
             out.println("<input type='radio' name='anho' value='" + años.get(0) + "' checked>" + años.get(0) + "<br>");
@@ -210,10 +209,9 @@ public class Sint13P2 extends HttpServlet {
 
         out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho"));
         out.println("<form method='POST' action='?fase3'>");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
-
+        out.println("<input type='hidden' name='fase' value='211' >");
         String año = (String) sesion.getAttribute("anho");
-        ArrayList<String> años = buscarAlbumesDeAño(listaDocuments, año);
+        ArrayList<Album> años = buscarAlbumesDeAño(listaDocuments, año);
 
         if(años.size()!=0){
             out.println("<input type='radio' name='album' value='" + años.get(0) + "' checked> " + años.get(0) + "<br>");
@@ -234,9 +232,9 @@ public class Sint13P2 extends HttpServlet {
 
         out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album"));
         out.println("<form method='POST' action='?fase4'>");
+        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
         String año = (String) sesion.getAttribute("anho");
         String album = (String) sesion.getAttribute("album");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
 
         ArrayList<String> estilos = buscarEstilos(listaDocuments, año, album);
 
@@ -260,10 +258,10 @@ public class Sint13P2 extends HttpServlet {
 
         out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album") + ", Estilo->" + (String) sesion.getAttribute("estilos"));
         out.println("<form method='POST' action='?fase5'>");
+        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
         String año = (String) sesion.getAttribute("anho");
         String album = (String) sesion.getAttribute("album");
         String estilo = (String) sesion.getAttribute("estilos");
-        out.println("<input type='hidden' name='hora' value='"+ Calendar.getInstance()+"' >");
 
         int num = buscarCancionesFinales(listaDocuments, año, album, estilo);
         out.println("El número de canciones de este estilo es:" + num + "<br><br>");
@@ -298,8 +296,8 @@ public class Sint13P2 extends HttpServlet {
     }
 
 
-    public static ArrayList<String> buscarInterprete(ArrayList<Document> listaXML) {
-        ArrayList<String> interpretes = new ArrayList<String>();
+    public static ArrayList<interprete> buscarInterprete(ArrayList<Document> listaXML) {
+        ArrayList<interprete> interpretes = new ArrayList<interprete>();
 
         for (int i = 0; i < listaXML.size(); i++) {
             Document xml = listaXML.get(i);
@@ -309,8 +307,11 @@ public class Sint13P2 extends HttpServlet {
             NodeList elementosEncontrados = xml.getElementsByTagName("Interprete");
             try{
                 interprete = (NodeList) xpath.evaluate("/Interprete/Nombre/NombreG | /Interprete/Nombre/NombreC", xml, XPathConstants.NODESET);
-                for (int j = 0; j <  interprete.getLength(); j++) interpretes.add(interprete.item(j).getTextContent());
-
+                for (int j = 0; j <  interprete.getLength(); j++){
+                    interprete intepreteSeleccionado = new interprete();
+                    intepreteSeleccionado.setNombre(interprete.item(j).getTextContent());
+                    interpretes.add(intepreteSeleccionado);
+                }
             } catch (XPathExpressionException e) {
                 e.printStackTrace();
             }
@@ -319,8 +320,8 @@ public class Sint13P2 extends HttpServlet {
         return interpretes;
     }
 
-    public static ArrayList<String> buscarAlbum(ArrayList<Document> listaXML, String interprete) {
-        ArrayList<String> listaAlbums = new ArrayList<String>();
+    public static ArrayList<Album> buscarAlbum(ArrayList<Document> listaXML, String interprete) {
+        ArrayList<Album> listaAlbums = new ArrayList<Album>();
 
         for (int i = 0; i < listaXML.size(); i++) {
             Document xml = listaXML.get(i);
@@ -329,7 +330,6 @@ public class Sint13P2 extends HttpServlet {
             try {
                 NodeList nombresA=null;
                 NodeList fechas=null;
-                ArrayList<String> ordenarAño = new ArrayList<String>();
                 if (interprete.equals("todos")) {
                     nombresA = (NodeList) xpath.evaluate("//Album/NombreA", xml, XPathConstants.NODESET);
                     fechas = (NodeList) xpath.evaluate("//Album/Año", xml, XPathConstants.NODESET);
@@ -338,28 +338,23 @@ public class Sint13P2 extends HttpServlet {
                     nombresA = (NodeList) xpath.evaluate("//Nombre[NombreG='"+interprete+"' or NombreC='"+interprete+"']/../Album/NombreA", xml, XPathConstants.NODESET);
                     fechas = (NodeList) xpath.evaluate("//Nombre[NombreG='"+interprete+"' or NombreC='"+interprete+"']/../Album/Año", xml, XPathConstants.NODESET);
                 }
+                String nombreAlbums= nombresA.item(0).getTextContent();
+                String añoPublicacion = fechas.item(0).getTextContent();
+                Album albumSeleccionado = new Album();
+                albumSeleccionado.setNombreA(nombreAlbums);
+                albumSeleccionado.setAño(Integer.parseInt(añoPublicacion));
+                listaAlbums.add(albumSeleccionado);
 
-                for (int j = 0; j < fechas.getLength(); j++) {
-                    String nombreAlbums= nombresA.item(j).getTextContent();
-                    String añoPublicacion = fechas.item(j).getTextContent();
-                    ordenarAño.add(añoPublicacion+"-@!"+nombreAlbums);
-                }
-
-                Collections.sort(ordenarAño);
-
-                for (int j=0;j<ordenarAño.size(); j++){
-                    String[] separado = (ordenarAño.get(j)).split("-@!");
-                    listaAlbums.add(separado[1]);
-                }
             }catch (XPathExpressionException e){
                 e.printStackTrace();
             }
         }
+        Collections.sort(listaAlbums);
         return listaAlbums;
     }
 
-    public static ArrayList<String> buscarCanciones(ArrayList<Document> listaXML, String album, String interprete) {
-        ArrayList<String> listaCancion = new ArrayList<String>();
+    public static ArrayList<Cancion> buscarCanciones(ArrayList<Document> listaXML, String album, String interprete) {
+        ArrayList<Cancion> listaCancion = new ArrayList<Cancion>();
 
         for (int i = 0; i < listaXML.size(); i++) {
             Document xml = listaXML.get(i);
@@ -374,9 +369,8 @@ public class Sint13P2 extends HttpServlet {
                 } else {
                     if (album.equalsIgnoreCase("todos")) listaCanciones = (NodeList) xpath.evaluate("//Nombre[NombreG='"+interprete+ "' or NombreC='"+interprete+"']/../Album/Cancion", xml, XPathConstants.NODESET);
                     else listaCanciones = (NodeList) xpath.evaluate("//Nombre[NombreG='"+interprete+ "' or NombreC='"+interprete+"']/../Album[NombreA='" + album + "']/Cancion", xml, XPathConstants.NODESET);
-
                 }
-                String todoJunto = null;
+                //String todoJunto = null;
                 String nombreC = "";
                 String duracion = "";
                 String descripcion = "";
@@ -392,10 +386,10 @@ public class Sint13P2 extends HttpServlet {
                                 if (!filtrarAux.equals("")) descripcion += filtrarAux;
                             } else if (nodoCancion.equals("NombreT")) nombreC = listaNodosDeCancion.item(k).getTextContent();
                             else if (nodoCancion.equals("Duracion")) duracion = listaNodosDeCancion.item(k).getTextContent();
-
                         }
-                        todoJunto = nombreC + "   --->" + duracion + " (" + descripcion+" )";
-                        listaCancion.add(todoJunto);
+                        //todoJunto = nombreC + "   --->" + duracion + " (" + descripcion+" )";
+                        Cancion cancionesSeleccionadas = new Cancion(nombreC, duracion, descripcion);
+                        listaCancion.add(cancionesSeleccionadas);
                         descripcion = "";
                     }
                 }
@@ -407,8 +401,8 @@ public class Sint13P2 extends HttpServlet {
         return listaCancion;
     }
 
-    public static ArrayList<String> buscarFechas(ArrayList<Document> listaXML) {
-        ArrayList<String> listaFechas = new ArrayList<String>();
+    public static ArrayList<Album> buscarFechas(ArrayList<Document> listaXML) {
+        ArrayList<Album> listaFechas = new ArrayList<Album>();
 
         for (int i = 0; i < listaXML.size(); i++) {
             Document xml = listaXML.get(i);
@@ -416,8 +410,8 @@ public class Sint13P2 extends HttpServlet {
             try {
                 NodeList listaALbumnesPorFecha = (NodeList) xpath.evaluate("/Interprete/Album/Año", xml, XPathConstants.NODESET);
                 for (int j = 0; j < listaALbumnesPorFecha.getLength(); j++) {
-                    String nombre = ((Element) listaALbumnesPorFecha.item(j)).getTextContent();
-                    if(!listaFechas.contains(nombre)) listaFechas.add(nombre);
+                    Album fechaAlbum = new Album(Integer.parseInt(((Element) listaALbumnesPorFecha.item(j)).getTextContent()));
+                    if(!listaFechas.contains(fechaAlbum)) listaFechas.add(fechaAlbum);
                 }
             } catch (XPathExpressionException e) {
                 e.printStackTrace();
@@ -427,8 +421,8 @@ public class Sint13P2 extends HttpServlet {
         return listaFechas;
     }
 
-    public static ArrayList<String> buscarAlbumesDeAño(ArrayList<Document> listaXML, String años) {
-        ArrayList<String> listaAlbum = new ArrayList<String>();
+    public static ArrayList<Album> buscarAlbumesDeAño(ArrayList<Document> listaXML, String años) {
+        ArrayList<Album> listaAlbum = new ArrayList<Album>();
 
         for (int i = 0; i < listaXML.size(); i++) {
             Document xml = listaXML.get(i);
@@ -439,7 +433,9 @@ public class Sint13P2 extends HttpServlet {
                 else listaALbumnesPorFecha = (NodeList) xpath.evaluate("/Interprete/Album[Año='" + años + "']/NombreA", xml, XPathConstants.NODESET);
 
                 for (int j = 0; j < listaALbumnesPorFecha.getLength(); j++) {
-                    String album = listaALbumnesPorFecha.item(j).getTextContent();
+                    String nombreA = listaALbumnesPorFecha.item(j).getTextContent();
+                    Album album = new Album();
+                    album.setNombreA(nombreA);
                     listaAlbum.add(album);
                 }
             } catch (XPathExpressionException e) {
@@ -511,20 +507,27 @@ public class Sint13P2 extends HttpServlet {
     public static void leerXML(String xml) {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         dbf.setValidating(true);
+        dbf.setNamespaceAware(true);
+        dbf.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaLanguage", "http://www.w3.org/2001/XMLSchema");
+        dbf.setAttribute("http://java.sun.com/xml/jaxp/properties/schemaSource", "iml.xsd");
         DocumentBuilder db = null;
         NodeList nodeList = null;
         try {
             db = dbf.newDocumentBuilder();
             db.setErrorHandler(new XML_DTD_ErrorHandler());
             Document doc = null;
+            doc=db.parse(new File(xml));
+            SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI);
+            Schema schema =sf.newSchema(new File("iml.xsd"));
+            Validator validator = schema.newValidator();
+            validator.validate(new DOMSource(doc));
            // if(xml.startsWith("http:")){
              //   doc = db.parse(new URL(xml).openStream(), "http://localhost:8013/sint13/");
             //}else{
               //  doc = db.parse(new URL("http://clave.det.uvigo.es:8080/~sintprof/15-16/p2/"+xml).openStream(), "http://localhost:8013/sint13/");
             //}
-            doc =db.parse(xml);
+            //doc =db.parse(xml);
             listaDocuments.add(doc);
-
             NodeList nodosIMLenSabina = doc.getElementsByTagName("IML");
 
             for (int i = 0; i < nodosIMLenSabina.getLength(); i++) {
@@ -536,31 +539,27 @@ public class Sint13P2 extends HttpServlet {
         } catch (ParserConfigurationException e) {
             if(XML_DTD_ErrorHandler.hasError() || XML_DTD_ErrorHandler.hasWarning() || XML_DTD_ErrorHandler.hasFatalError()){
                 errores.add(XML_DTD_ErrorHandler.getMessage());
-                ficheroErroneo.add("Fichero: "+xml);
                 XML_DTD_ErrorHandler.clear();
-            }else{
-                errores.add("ERROR: "+e.toString());
-                ficheroErroneo.add("Fichero: "+xml);
+            }else {
+                errores.add("ERROR: " + e.toString());
             }
+            ficheroErroneo.add("Fichero: "+xml);
         } catch (SAXException e) {
             if(XML_DTD_ErrorHandler.hasError() || XML_DTD_ErrorHandler.hasWarning() || XML_DTD_ErrorHandler.hasFatalError()){
                 errores.add(XML_DTD_ErrorHandler.getMessage());
-                ficheroErroneo.add("Fichero: "+xml);
                 XML_DTD_ErrorHandler.clear();
             } else{
                 errores.add("ERROR: "+e.toString());
-                ficheroErroneo.add("Fichero: "+xml);
             }
+            ficheroErroneo.add("Fichero: "+xml);
         } catch (IOException e) {
             if(XML_DTD_ErrorHandler.hasError() || XML_DTD_ErrorHandler.hasWarning() || XML_DTD_ErrorHandler.hasFatalError()){
                 errores.add(XML_DTD_ErrorHandler.getMessage());
-                ficheroErroneo.add("Fichero: "+xml);
                 XML_DTD_ErrorHandler.clear();
             } else{
                 errores.add("ERROR: "+e.toString());
-                ficheroErroneo.add("Fichero: "+xml);
             }
-
+            ficheroErroneo.add("Fichero: "+xml);
         }
     }
 }

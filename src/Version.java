@@ -11,4 +11,20 @@ public class Version implements Serializable{
         Nombre = nombre;
         IML = iml;
     }
+
+    public String getNombre() {
+        return Nombre;
+    }
+
+    public void setNombre(String nombre) {
+        Nombre = nombre;
+    }
+
+    public String getIML() {
+        return IML;
+    }
+
+    public void setIML(String IML) {
+        this.IML = IML;
+    }
 }
