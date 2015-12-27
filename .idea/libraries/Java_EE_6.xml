@@ -2,8 +2,13 @@
   <library name="Java EE 6">
     <CLASSES>
       <root url="jar://$USER_HOME$/Documents/Tomcat/apache-tomcat-8.0.28/lib/servlet-api.jar!/" />
+      <root url="jar://$USER_HOME$/Documents/Tomcat/apache-tomcat-8.0.28/lib/taglibs-standard-jstlel-1.2.5.jar!/" />
+      <root url="jar://$USER_HOME$/Documents/Tomcat/apache-tomcat-8.0.28/lib/taglibs-standard-impl-1.2.5.jar!/" />
     </CLASSES>
-    <JAVADOC />
+    <JAVADOC>
+      <root url="http://java.sun.com/jsp/jstl/core" />
+      <root url="jar://$USER_HOME$/Documents/Tomcat/apache-tomcat-8.0.28/lib/javax.servlet.jsp.jstl-api-1.2.1-javadoc.jar!/" />
+    </JAVADOC>
     <SOURCES />
   </library>
 </component>

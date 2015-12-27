@@ -7,6 +7,9 @@
         <element id="directory" name="classes">
           <element id="module-output" name="SINT-15-16-Practica_3" />
         </element>
+        <element id="directory" name="lib">
+          <element id="file-copy" path="$USER_HOME$/Documents/Tomcat/apache-tomcat-8.0.28/lib/taglibs-standard-jstlel-1.2.5.jar" />
+        </element>
       </element>
     </root>
   </artifact>
