@@ -1,8 +1,5 @@
 import java.util.ArrayList;
 
-/**
- * Created by p1res on 27/12/2015.
- */
 public class Resultado {
     private ArrayList<String> resultados;
     private int num;
