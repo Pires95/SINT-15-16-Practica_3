@@ -12,18 +12,15 @@
     <h1>Bienvenido al servicio de consulta de informacíon musical (Marcos Pires)</h1>
     <h2>Seleccione una de las siguientes opciones</h2>
 </div>
-Consulta 1, Interprete-><%= session.getAttribute("interprete") %>, Álbum-><%= session.getAttribute("album") %>
-<form method="POST" action="?fase4">
-    <input type="hidden" name="fase" value="1111">
-    <c:forEach items="${resultadoBean.resultados}" var="result">
-         <c:out value="${result}"></c:out><br>
-    </c:forEach>
-    <input type="submit" value="Enviar">
+Consulta 2, Año-><%=(String)session.getAttribute("anho")%>, Álbum-><%=(String)session.getAttribute("album")%>, Estilo-><%=(String)session.getAttribute("estilos")%>
+<form method="POST" action="?fase5">
+    <input type="hidden" name="fase" value="21111">
+    El número de canciones de este estilo es: <c:out value="${resultadoBean.num}"></c:out><br>
+    <br><input type="submit" value="Enviar">
     <input type='submit' value='Inicio' onclick='form.fase.value=0'>
-    <input type='submit' value='Atras' onclick='form.fase.value=<%= ((String)session.getAttribute("fase")).substring(0, 2) %>'><br>
+    <input type='submit' value='Atras' onclick='form.fase.value=<%=((String)session.getAttribute("fase")).substring(0,3)%>'><br>
 </form>
 
 <footer>Creada por Marcos Pires Filgueira</footer>
 </body>
 </html>
-

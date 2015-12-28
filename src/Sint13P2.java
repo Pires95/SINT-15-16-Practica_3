@@ -27,7 +27,6 @@ import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -37,7 +36,6 @@ public class Sint13P2 extends HttpServlet {
     static ArrayList<String> listaIML = new ArrayList<String>();
     static ArrayList<Document> listaDocuments = new ArrayList<Document>();
     static ArrayList<String> errores = new ArrayList<String>();
-    static ArrayList<String> listaInterpretes = new ArrayList<String>();
     static HttpSession sesion;
 
     public void init() {
@@ -47,7 +45,6 @@ public class Sint13P2 extends HttpServlet {
             String nuevoXML = listaIML.get(i);
             leerXML(nuevoXML);
         }
-
     }
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         doPost(request, response);
@@ -108,172 +105,71 @@ public class Sint13P2 extends HttpServlet {
         Errores error = new Errores();
         error.setError(errores);
         request.setAttribute("errorBean", error);
-        ServletContext sc = getServletContext();
-        RequestDispatcher rd = sc.getRequestDispatcher("/pantallaInicio.jsp");
-        rd.forward(request,response);
+        delegateControl(request, response, sesion);
     }
 
     public void primeraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
         Resultado resultado= new Resultado();
         resultado.setResultados(buscarInterprete(listaDocuments));
         request.setAttribute("resultadoBean",resultado);
-        ServletContext sc = getServletContext();
-        RequestDispatcher rd = sc.getRequestDispatcher("/primeraPantallaLista.jsp");
-        rd.forward(request,response);
+        delegateControl(request, response, sesion);
     }
 
     public void segundaPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
+        Resultado resultado= new Resultado();
         String interpr = (String) sesion.getAttribute("interprete");
-        out.println("Consulta 1, interprete->" + interpr);
-        out.println("<form method='POST' action='?fase3'>");
-        out.println("<input type='hidden' name='fase' value='111' >");
-        String interprete = (String) sesion.getAttribute("interprete");
-        ArrayList<String> albumesAImprimir = buscarAlbum(listaDocuments, interprete);
-        if(albumesAImprimir.size()!=0){
-            out.println("<input type='radio' name='album' value='" + albumesAImprimir.get(0) + "' checked>" + albumesAImprimir.get(0) + "<br>");
-
-            for (int i = 1; i < albumesAImprimir.size(); i++) out.println("<input type='radio' name='album' value='" + albumesAImprimir.get(i) + "'>" + albumesAImprimir.get(i) + "<br>");
-
-            out.println("<input type='radio' name='album' value='todos'> Todos<br><br>");
-            out.println("<input type='submit' value='Enviar'>");
-        }
-        char faseAnterior = ((String) sesion.getAttribute("fase")).charAt(0);
-        out.println("<input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        resultado.setResultados(buscarAlbum(listaDocuments, interpr));
+        request.setAttribute("resultadoBean",resultado);
+        delegateControl(request, response, sesion);
     }
 
     public void terceraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response,HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
-        out.println("Consulta 1, interprete-> " + (String) sesion.getAttribute("interprete") + ", Álbum->" + (String) sesion.getAttribute("album"));
-        out.println("<form method='POST' action='?fase4'>");
-        out.println("<input type='hidden' name='fase' value='1111' >");
-
+        Resultado resultado= new Resultado();
+        String interpr = (String) sesion.getAttribute("interprete");
         String album = (String) sesion.getAttribute("album");
-        String interprete = (String) sesion.getAttribute("interprete");
-        ArrayList<String> albumSeleccionado = buscarCanciones(listaDocuments, album, interprete);
-
-        if(albumSeleccionado.size()!=0) for (int i = 0; i < albumSeleccionado.size(); i++) out.println(albumSeleccionado.get(i) + "<br>");
-
-        String fase = (String) sesion.getAttribute("fase");
-        String faseAnterior = fase.substring(0, 2);
-        out.println("<br><input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        resultado.setResultados(buscarCanciones(listaDocuments, album , interpr));
+        request.setAttribute("resultadoBean",resultado);
     }
 
     public void primeraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
-        out.println("Consulta 2");
-        out.println("<form method='POST' action='?fase2'>");
-        out.println("<input type='hidden' name='fase' value='21' >");
-        ArrayList<String> años = buscarFechas(listaDocuments);
-
-        if(años.size()!=0){
-            out.println("<input type='radio' name='anho' value='" + años.get(0) + "' checked>" + años.get(0) + "<br>");
-
-            for (int i = 1; i < años.size(); i++) out.println("<input type='radio' name='anho' value='" + años.get(i) + "'>" + años.get(i) + "<br>");
-
-            out.println("<input type='radio' name='anho' value='todos'> Todos <br><br>");
-            out.println("<input type='submit' value='Enviar'>");
-        }
-        out.println("<input type='submit' value='Atras' onclick='form.fase.value=0'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        Resultado resultado= new Resultado();
+        resultado.setResultados(buscarFechas(listaDocuments));
+        request.setAttribute("resultadoBean",resultado);
+        delegateControl(request, response, sesion);
     }
 
     public void segundaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
-
-        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho"));
-        out.println("<form method='POST' action='?fase3'>");
-        out.println("<input type='hidden' name='fase' value='211' >");
+        Resultado resultado= new Resultado();
         String año = (String) sesion.getAttribute("anho");
-        ArrayList<String> años = buscarAlbumesDeAño(listaDocuments, año);
-
-        if(años.size()!=0){
-            out.println("<input type='radio' name='album' value='" + años.get(0) + "' checked> " + años.get(0) + "<br>");
-
-            for (int i = 1; i < años.size(); i++) out.println("<input type='radio' name='album' value='" + años.get(i) + "'> " + años.get(i) + "<br>");
-
-            out.println("<input type='radio' name='album' value='todos'> Todos <br><br>");
-            out.println("<input type='submit' value='Enviar'>");
-        }
-        String faseAnterior = "1";
-        out.println("<input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        resultado.setResultados(buscarAlbumesDeAño(listaDocuments, año));
+        request.setAttribute("resultadoBean",resultado);
+        delegateControl(request, response, sesion);
     }
 
     public void terceraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
-
-        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album"));
-        out.println("<form method='POST' action='?fase4'>");
-        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
+        Resultado resultado= new Resultado();
         String año = (String) sesion.getAttribute("anho");
         String album = (String) sesion.getAttribute("album");
-
-        ArrayList<String> estilos = buscarEstilos(listaDocuments, año, album);
-
-        if(estilos.size()!=0){
-            out.println("<input type='radio' name='estilos' value='" + estilos.get(0) + "' checked> " + estilos.get(0) + "<br>");
-
-            for (int i = 1; i < estilos.size(); i++) out.println("<input type='radio' name='estilos' value='" + estilos.get(i) + "'> " + estilos.get(i) + "<br>");
-
-            out.println("<input type='radio' name='estilos' value='todos'> Todos <br><br>");
-            out.println("<input type='submit' value='Enviar'>");
-        }
-        String fase = (String) sesion.getAttribute("fase");
-        String faseAnterior = fase.substring(0, 2);
-        out.println("<input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        resultado.setResultados(buscarEstilos(listaDocuments, año, album));
+        request.setAttribute("resultadoBean",resultado);
+        delegateControl(request, response, sesion);
     }
 
     public void cuartaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        imprimirCabecera(out, request, response);
-
-        out.println("Consulta 2, Año-> " + (String) sesion.getAttribute("anho") + ", Álbum->" + (String) sesion.getAttribute("album") + ", Estilo->" + (String) sesion.getAttribute("estilos"));
-        out.println("<form method='POST' action='?fase5'>");
-        out.println("<input type='hidden' name='fase' value='" + request.getParameter("fase") + "1' >");
+        Resultado resultado= new Resultado();
         String año = (String) sesion.getAttribute("anho");
         String album = (String) sesion.getAttribute("album");
         String estilo = (String) sesion.getAttribute("estilos");
-
-        int num = buscarCancionesFinales(listaDocuments, año, album, estilo);
-        out.println("El número de canciones de este estilo es:" + num + "<br><br>");
-        String fase = (String) sesion.getAttribute("fase");
-        String faseAnterior = fase.substring(0, 3);
-        out.println("<br><input type='submit' value='Atras' onclick='form.fase.value=" + faseAnterior + "'>");
-        out.println("<input type='submit' value='Inicio' onclick='form.fase.value=0'>");
-        imprimirFinal(out, request, response);
+        resultado.setNum(buscarCancionesFinales(listaDocuments, año, album, estilo));
+        request.setAttribute("resultadoBean",resultado);
+        delegateControl(request, response, sesion);
     }
 
-    public void imprimirCabecera(PrintWriter out, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
-        out.println("<html>");
-        out.println("<head>");
-        out.println("<link rel='stylesheet' href='iml.css'>");
-        out.println("<link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet' type='text/css'>");
-        out.println("<title>Servicio de consulta de información musical</title>");
-        out.println("</head>");
-        out.println("<body>");
-        out.println("<div>");
-        out.println("<h1>Bienvenido al servicio de consulta de información musical (Marcos Pires)</h1>");
-        out.println("<h2>Seleccione una de las siguientes opciones</h2>");
-        out.println("</div>");
-        request.setCharacterEncoding("UTF-8");
+    public void delegateControl(HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
+        ServletContext sc = getServletContext();
+        RequestDispatcher rd = sc.getRequestDispatcher("/cuartaPantallaEstilos.jsp");
+        rd.forward(request,response);
     }
-
-    public void imprimirFinal(PrintWriter out, HttpServletRequest request, HttpServletResponse response) {
-        out.println("</form>");
-        out.println("<footer><hr></hr>");
-        out.println("Creada por Marcos Pires Filgueira</footer>");
-        out.println("</body>");
-        out.println("</html>");
-    }
-
 
     public static ArrayList<String> buscarInterprete(ArrayList<Document> listaXML) {
         ArrayList<String> interpretes = new ArrayList<String>();
