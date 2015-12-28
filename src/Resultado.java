@@ -24,5 +24,7 @@ public class Resultado {
         this.resultados = resultados;
     }
 
-
+    public int getSize(){
+        return resultados.size();
+    }
 }

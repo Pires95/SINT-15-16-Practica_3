@@ -30,5 +30,10 @@ footer {
     padding: 20px 6px;
 }
 div.errores {
-    color: red;
+     color: red;
+ }
+
+div.caducado {
+    border: 1px solid black;
+    text-align: center;
 }

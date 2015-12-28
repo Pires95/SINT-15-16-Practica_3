@@ -136,7 +136,7 @@ public class Sint13P2 extends HttpServlet {
             Errores error = new Errores();
             error.setError(errores);
             request.setAttribute("errorBean", error);
-            jsp="/pantallaInicio.jsp";
+            jsp="/pantallaInicioCaducada.jsp";
             delegateControl(request, response, sesion, jsp);
         }
     }

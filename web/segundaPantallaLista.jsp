@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c"  uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <html>
 <head>
@@ -15,15 +15,19 @@
 Consulta 1, Interprete-><%= session.getAttribute("interprete") %>
 <form method="POST" action="?fase3">
     <input type="hidden" name="fase" value="111">
-    <c:forEach items="${resultadoBean.resultados}" var="result">
-        <input type="radio" name="album" value="<c:out value="${result}"></c:out>"> <c:out value="${result}"></c:out><br>
-    </c:forEach>
-    <input type='radio' name='album' value='todos' checked> Todos<br><br>
-    <input type="submit" value="Enviar">
+    <c:if test="${resultadoBean.size!=0}">
+        <c:forEach items="${resultadoBean.resultados}" var="result">
+            <input type="radio" name="album" value="<c:out value="${result}"></c:out>"> <c:out
+                value="${result}"></c:out><br>
+        </c:forEach>
+        <input type='radio' name='album' value='todos' checked> Todos<br><br>
+        <input type="submit" value="Enviar">
+    </c:if>
     <input type='submit' value='Inicio' onclick='form.fase.value=0'>
-    <input type='submit' value='Atras' onclick='form.fase.value=<%= ((String)session.getAttribute("fase")).charAt(0) %>'><br>
+    <input type='submit' value='Atras'
+           onclick='form.fase.value=<%= ((String)session.getAttribute("fase")).charAt(0) %>'><br>
 </form>
-
+<hr>
 <footer>Creada por Marcos Pires Filgueira</footer>
 </body>
 </html>

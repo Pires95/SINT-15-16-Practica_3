@@ -21,6 +21,10 @@ Se han producido los siguientes errores:
     </c:forEach>
 </div>
 <br>
+<div class="caducado">
+    <h3>Lo lamentamos su sesión ha caducado, por favor comience su búsqueda de nuevo.</h3>
+</div>
+<br>
 <form method="post" name="form" action="?fase1">
     <input type="hidden" name="fase" value="1">
     <input type="radio" name="consulta" value="lista" checked>Lista. <br>
