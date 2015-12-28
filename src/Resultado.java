@@ -5,22 +5,12 @@ import java.util.ArrayList;
  */
 public class Resultado {
     private ArrayList<String> resultados;
-    private String tipo;
     private int num;
 
     public Resultado() {
         resultados=null;
-        tipo=null;
         num=0;
     }
-    public String getTipo() {
-        return tipo;
-    }
-
-    public void setTipo(String tipo) {
-        this.tipo = tipo;
-    }
-
     public int getNum() {
         return num;
     }

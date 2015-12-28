@@ -14,15 +14,14 @@
 </div>
 
     Se han producido los siguientes errores:
-        <div class="errrores">
+        <div class="errores">
 
             <c:forEach items="${errorBean.error}" var="tipoError">
-                <br>
                 <c:out value="${tipoError}"></c:out>
                 <br>
             </c:forEach>
         </div>
-
+    <br>
 <form method="post"  name="form" action="?fase1">
     <input type="hidden" name="fase" value="1">
     <input type="radio" name="consulta" value="lista" checked>Lista. <br>

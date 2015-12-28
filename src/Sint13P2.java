@@ -26,7 +26,6 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -51,8 +50,8 @@ public class Sint13P2 extends HttpServlet {
     }
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("text/html");
-        PrintWriter out = response.getWriter();
-
+        request.setCharacterEncoding("UTF-8");
+        String jsp = null;
         try{
             if (request.getParameter("fase") != null) {
                 String fase = request.getParameter("fase");
@@ -60,114 +59,91 @@ public class Sint13P2 extends HttpServlet {
                 if (fase.equals("0")) {
                     sesion = request.getSession(true);
                     sesion.setMaxInactiveInterval(20);
-                    pantallaSeleccion(out, request, response, sesion);
+                    Errores error = new Errores();
+                    error.setError(errores);
+                    jsp="/pantallaInicio.jsp";
+                    request.setAttribute("errorBean", error);
+                    delegateControl(request, response, sesion, jsp);
                 }
                 else{
+
                     Enumeration numeroDeParametros = request.getParameterNames();
                     while(numeroDeParametros.hasMoreElements()){
                         String valores = (String)numeroDeParametros.nextElement();
                         sesion.setAttribute(valores, request.getParameter(valores));
                     }
-
+                    Resultado resultado= new Resultado();
                     if (fase.equals("1")) {
-                        if (((String) sesion.getAttribute("consulta")).equals("lista")) primeraPantallaLista(out, request, response, sesion);
-
-                        if (((String) sesion.getAttribute("consulta")).equals("estilo")) primeraPantallaEstilos(out, request, response, sesion);
+                        if (((String) sesion.getAttribute("consulta")).equals("lista")){
+                            resultado.setResultados(buscarInterprete(listaDocuments));
+                            jsp="/primeraPantallaLista.jsp";
+                        }
+                        if (((String) sesion.getAttribute("consulta")).equals("estilo")){
+                            resultado.setResultados(buscarFechas(listaDocuments));
+                            jsp="/primeraPantallaEstilos.jsp";
+                        }
                     }
                     if (fase.length() > 1) {
                         if (fase.charAt(0) == '1') {//procesamos por artista
-                            if (fase.equals("11")) segundaPantallaLista(out, request, response, sesion);
-
-                            if (fase.length() > 2) terceraPantallaLista(out, request, response, sesion);
+                            if (fase.equals("11")){
+                                String interpr = (String) sesion.getAttribute("interprete");
+                                resultado.setResultados(buscarAlbum(listaDocuments, interpr));
+                                jsp="/segundaPantallaLista.jsp";
+                            }
+                            if (fase.length() > 2) {
+                                String interpr = (String) sesion.getAttribute("interprete");
+                                String album = (String) sesion.getAttribute("album");
+                                resultado.setResultados(buscarCanciones(listaDocuments, album , interpr));
+                                jsp="/terceraPantallaLista.jsp";
+                            }
                         }
                         if (fase.charAt(0) == '2') { //procesamos por genero
-                            if (fase.equals("21")) segundaPantallaEstilos(out, request, response, sesion);
-
-                            if (fase.length() == 3) terceraPantallaEstilos(out, request, response, sesion);
-
-                            if (fase.length() == 4) cuartaPantallaEstilos(out, request, response, sesion);
+                            if (fase.equals("21")) {
+                                String año = (String) sesion.getAttribute("anho");
+                                resultado.setResultados(buscarAlbumesDeAño(listaDocuments, año));
+                                jsp="/segundaPantallaEstilos.jsp";
+                            }
+                            if (fase.length() == 3){
+                                String año = (String) sesion.getAttribute("anho");
+                                String album = (String) sesion.getAttribute("album");
+                                resultado.setResultados(buscarEstilos(listaDocuments, año, album));
+                                jsp="/terceraPantallaEstilos.jsp";
+                            }
+                            if (fase.length() == 4) {
+                                String año = (String) sesion.getAttribute("anho");
+                                String album = (String) sesion.getAttribute("album");
+                                String estilo = (String) sesion.getAttribute("estilos");
+                                resultado.setNum(buscarCancionesFinales(listaDocuments, año, album, estilo));
+                                jsp="/cuartaPantallaEstilos.jsp";
+                            }
                         }
                     }
+                    request.setAttribute("resultadoBean",resultado);
+                    delegateControl(request, response, sesion, jsp);
                 }
             } else{
                 sesion = request.getSession(true);
                 sesion.setMaxInactiveInterval(20);
-                pantallaSeleccion(out, request, response, sesion);
+                Errores error = new Errores();
+                error.setError(errores);
+                request.setAttribute("errorBean", error);
+                jsp="/pantallaInicio.jsp";
+                delegateControl(request, response, sesion, jsp);
             }
         }catch (Throwable e){
             sesion = request.getSession(true);
             sesion.setMaxInactiveInterval(20);
-            pantallaSeleccion(out, request, response, sesion);
+            Errores error = new Errores();
+            error.setError(errores);
+            request.setAttribute("errorBean", error);
+            jsp="/pantallaInicio.jsp";
+            delegateControl(request, response, sesion, jsp);
         }
     }
 
-    public void pantallaSeleccion(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws IOException, ServletException {
-        Errores error = new Errores();
-        error.setError(errores);
-        request.setAttribute("errorBean", error);
-        delegateControl(request, response, sesion);
-    }
-
-    public void primeraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        resultado.setResultados(buscarInterprete(listaDocuments));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void segundaPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        String interpr = (String) sesion.getAttribute("interprete");
-        resultado.setResultados(buscarAlbum(listaDocuments, interpr));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void terceraPantallaLista(PrintWriter out, HttpServletRequest request, HttpServletResponse response,HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        String interpr = (String) sesion.getAttribute("interprete");
-        String album = (String) sesion.getAttribute("album");
-        resultado.setResultados(buscarCanciones(listaDocuments, album , interpr));
-        request.setAttribute("resultadoBean",resultado);
-    }
-
-    public void primeraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        resultado.setResultados(buscarFechas(listaDocuments));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void segundaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        String año = (String) sesion.getAttribute("anho");
-        resultado.setResultados(buscarAlbumesDeAño(listaDocuments, año));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void terceraPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        String año = (String) sesion.getAttribute("anho");
-        String album = (String) sesion.getAttribute("album");
-        resultado.setResultados(buscarEstilos(listaDocuments, año, album));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void cuartaPantallaEstilos(PrintWriter out, HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
-        Resultado resultado= new Resultado();
-        String año = (String) sesion.getAttribute("anho");
-        String album = (String) sesion.getAttribute("album");
-        String estilo = (String) sesion.getAttribute("estilos");
-        resultado.setNum(buscarCancionesFinales(listaDocuments, año, album, estilo));
-        request.setAttribute("resultadoBean",resultado);
-        delegateControl(request, response, sesion);
-    }
-
-    public void delegateControl(HttpServletRequest request, HttpServletResponse response, HttpSession sesion) throws ServletException, IOException {
+    public void delegateControl(HttpServletRequest request, HttpServletResponse response, HttpSession sesion, String jsp) throws ServletException, IOException {
         ServletContext sc = getServletContext();
-        RequestDispatcher rd = sc.getRequestDispatcher("/cuartaPantallaEstilos.jsp");
+        RequestDispatcher rd = sc.getRequestDispatcher(jsp);
         rd.forward(request,response);
     }
 
@@ -265,7 +241,6 @@ public class Sint13P2 extends HttpServlet {
                                 if (!filtrarAux.equals("")) descripcion += filtrarAux;
                             } else if (nodoCancion.equals("NombreT")) nombreC = listaNodosDeCancion.item(k).getTextContent();
                             else if (nodoCancion.equals("Duracion")) duracion = listaNodosDeCancion.item(k).getTextContent();
-
                         }
                         todoJunto = nombreC + "   --->" + duracion + " (" + descripcion+" )";
                         listaCancion.add(todoJunto);
