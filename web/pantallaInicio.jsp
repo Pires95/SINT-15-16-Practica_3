@@ -15,7 +15,6 @@
 
     Se han producido los siguientes errores:
         <div class="errores">
-
             <c:forEach items="${errorBean.error}" var="tipoError">
                 <c:out value="${tipoError}"></c:out>
                 <br>
